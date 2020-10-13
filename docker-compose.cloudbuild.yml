@@ -1,0 +1,72 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    build: .
+    container_name: app
+    # entrypoint: dockerize -template ./.docker/app/.env:.env -wait tcp://db:3306 -timeout 40s ./.docker/entrypoint.sh
+    # environment:
+    #   DB_HOST: db
+    #   DB_DATABASE: laravel
+    #   DB_USERNAME: root
+    #   DB_PASSWORD: root
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - .:/var/www
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+
+  #Nginx Service
+  nginx:
+    build: .docker/nginx
+    container_name: nginx
+    restart: unless-stopped
+    tty: true
+    entrypoint: dockerize -template ./.docker/nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf nginx -g "daemon off;"
+    environment: 
+      NGINX_HOST: app
+      NGINX_PORT: 9000
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  #Redix Service
+  redis:
+    image: redis:alpine
+    expose:
+      - 6379
+    networks:
+      - app-network
+
+  # #MySQL Service
+  db:
+    build: .docker/mysql
+    command: --innodb-use-native-aio=0
+    container_name: db
+    restart: always
+    tty: true
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.docker/dbdata:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: root
+    networks:
+      - app-network
+
+# Docker Networks
+networks:
+  app-network:
+    driver: bridge
