@@ -1,6 +1,6 @@
 steps:
   - id: "Rodando docker-compose"
-    name: 'gcr.io/$PROJECT_ID/docker-compose'
+    name: 'gcr.io/$PROJECT_ID/docker-compose:latest'
     args: ['-f','docker-compose.cloudbuild.yml','up','-d']
 
   - id: "Chown in /var/www"
